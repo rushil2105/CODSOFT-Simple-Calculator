@@ -1,0 +1,129 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ctime>
+using namespace std;
+
+// Book structure
+struct Book {
+    int id;
+    string title;
+    string author;
+    string isbn;
+    bool available;
+};
+
+// Transaction structure
+struct Transaction {
+    int bookId;
+    string borrower;
+    int issueDay;
+};
+
+// Global containers
+vector<Book> books;
+vector<Transaction> transactions;
+
+// Function to add books
+void addBook(int id, string title, string author, string isbn) {
+    books.push_back({id, title, author, isbn, true});
+}
+
+// Search book
+void searchBook(string key) {
+    for (auto &b : books) {
+        if (b.title == key || b.author == key || b.isbn == key) {
+            cout << "ID: " << b.id << ", Title: " << b.title
+                 << ", Author: " << b.author
+                 << ", ISBN: " << b.isbn
+                 << ", Available: " << (b.available ? "Yes" : "No") << endl;
+        }
+    }
+}
+
+// Checkout book
+void checkoutBook(int bookId, string borrower) {
+    for (auto &b : books) {
+        if (b.id == bookId && b.available) {
+            b.available = false;
+            time_t t = time(0);
+            tm *now = localtime(&t);
+
+            transactions.push_back({bookId, borrower, now->tm_yday});
+            cout << "Book checked out successfully!" << endl;
+            return;
+        }
+    }
+    cout << "Book not available!" << endl;
+}
+
+// Return book + fine calculation
+void returnBook(int bookId) {
+    time_t t = time(0);
+    tm *now = localtime(&t);
+    int today = now->tm_yday;
+
+    for (auto it = transactions.begin(); it != transactions.end(); it++) {
+        if (it->bookId == bookId) {
+            int daysUsed = today - it->issueDay;
+            int fine = (daysUsed > 14) ? (daysUsed - 14) * 5 : 0;
+
+            cout << "Book returned." << endl;
+            cout << "Fine: Rs." << fine << endl;
+
+            for (auto &b : books) {
+                if (b.id == bookId) {
+                    b.available = true;
+                    break;
+                }
+            }
+
+            transactions.erase(it);
+            return;
+        }
+    }
+    cout << "Transaction not found!" << endl;
+}
+
+// Menu
+int main() {
+    // Sample books
+    addBook(1, "C++ Programming", "Bjarne", "111");
+    addBook(2, "Data Structures", "Mark", "222");
+
+    int choice;
+    do {
+        cout << "\n--- Library Management System ---\n";
+        cout << "1. Search Book\n";
+        cout << "2. Checkout Book\n";
+        cout << "3. Return Book\n";
+        cout << "4. Exit\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            string key;
+            cout << "Enter title/author/ISBN: ";
+            cin >> key;
+            searchBook(key);
+        }
+        else if (choice == 2) {
+            int id;
+            string name;
+            cout << "Enter Book ID: ";
+            cin >> id;
+            cout << "Enter Borrower Name: ";
+            cin >> name;
+            checkoutBook(id, name);
+        }
+        else if (choice == 3) {
+            int id;
+            cout << "Enter Book ID: ";
+            cin >> id;
+            returnBook(id);
+        }
+
+    } while (choice != 4);
+
+    return 0;
+}
